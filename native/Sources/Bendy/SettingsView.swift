@@ -43,6 +43,7 @@ struct BendySettingsView: View {
                     statusCard
                     stylePicker
                     lidControls
+                    captureControls
                     finishControls
 
                     HStack {
@@ -101,9 +102,11 @@ struct BendySettingsView: View {
                 .controlSize(.small)
                 .font(.system(size: 12.5, weight: .semibold))
                 .accessibilityLabel("Enable Foldly")
-                .accessibilityHint("Starts screen capture immediately and keeps it on until paused or disabled")
+                .accessibilityHint(settings.captureMode == .byLidAngle
+                    ? "Arms screen capture below \(Int(settings.captureTrigger)) degrees"
+                    : "Starts screen capture immediately and keeps it on until paused or disabled")
 
-                Text("Screen capture while enabled")
+                Text(settings.captureCaption)
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.68))
             }
@@ -230,6 +233,43 @@ struct BendySettingsView: View {
         .background(.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(BendyPalette.line, lineWidth: 1))
         .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: settings.followLid)
+    }
+
+    private var captureControls: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            sectionLabel("Screen capture")
+            Picker("Capture mode", selection: $settings.captureMode) {
+                ForEach(CaptureMode.allCases) { mode in Text(mode.title).tag(mode) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .accessibilityLabel("Capture mode")
+
+            if settings.captureMode == .byLidAngle {
+                HStack(spacing: 10) {
+                    Text("Start below")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .frame(width: 92, alignment: .leading)
+                    Slider(value: $settings.captureTrigger, in: CaptureGate.triggerRange, step: 1)
+                        .tint(BendyPalette.lavender)
+                        .accessibilityLabel("Capture trigger angle")
+                        .accessibilityValue("\(Int(settings.captureTrigger)) degrees")
+                    Text("\(Int(settings.captureTrigger))°")
+                        .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
+                        .frame(width: 36, alignment: .trailing)
+                }
+                Text("Stops at \(Int(settings.captureStopAngle))° when reopening. This small gap prevents repeated restarts.")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(BendyPalette.muted)
+            } else {
+                Text("Captures while enabled, including with the lid open. Pause or disable to stop.")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(BendyPalette.muted)
+            }
+        }
+        .padding(12)
+        .background(.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(BendyPalette.line, lineWidth: 1))
     }
 
     private var finishControls: some View {

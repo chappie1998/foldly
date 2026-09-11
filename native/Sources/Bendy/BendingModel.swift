@@ -82,12 +82,22 @@ enum BendySelfTest {
     }
 }
 
-// Keep a single capture session across lid movement while Foldly is enabled.
+enum CaptureMode: String, CaseIterable, Identifiable {
+    case byLidAngle, alwaysOn
+    var id: String { rawValue }
+    var title: String { self == .byLidAngle ? "Lid angle" : "Always on" }
+}
+
 struct CaptureGate {
+    static let triggerRange = 60.0...115.0
+    static func normalizedTrigger(_ angle: Double) -> Double {
+        angle.isFinite ? min(triggerRange.upperBound, max(triggerRange.lowerBound, angle.rounded())) : 105
+    }
     private(set) var isActive = false
     enum Action { case start, stop, none }
-    mutating func update(angle: Double, allowed: Bool) -> Action {
-        let wanted = allowed && angle.isFinite
+    mutating func update(angle: Double, allowed: Bool, mode: CaptureMode = .byLidAngle, triggerAngle: Double = 105) -> Action {
+        let threshold = Self.normalizedTrigger(triggerAngle) + (isActive ? 2 : 0)
+        let wanted = allowed && angle.isFinite && (mode == .alwaysOn || angle < threshold)
         guard wanted != isActive else { return .none }
         isActive = wanted
         return wanted ? .start : .stop

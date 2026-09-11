@@ -163,6 +163,27 @@ enum RendererFramebufferHarness {
             let reclosed = window.isVisible && window.alphaValue == 1 && !renderer.isPaused && renderer.hasFrameForTesting
             passed = passed && openedWithFrame && reclosed
             print("Static desktop reopen/reclose: retained=\(openedWithFrame), presented=\(reclosed)")
+            var openingCompletions = 0
+            overlay.finishOpening {
+                openingCompletions += 1
+                overlay.hide(clear: true)
+            }
+            let stoppedDeadline = Date().addingTimeInterval(2)
+            while window.isVisible, Date() < stoppedDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.01)) }
+            let stoppedCleanly = openingCompletions == 1 && !window.isVisible && !renderer.hasFrameForTesting && renderer.isPaused
+            passed = passed && stoppedCleanly
+            print("Capture-stop opening: completedOnce=\(openingCompletions == 1), cleared=\(stoppedCleanly)")
+
+            renderer.submit(buffer)
+            overlay.prepare(parameters)
+            let restartDeadline = Date().addingTimeInterval(2)
+            while window.alphaValue < 1, Date() < restartDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.01)) }
+            var staleCompletion = false
+            overlay.finishOpening { staleCompletion = true; overlay.hide(clear: true) }
+            overlay.prepare(parameters)
+            RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+            passed = passed && !staleCompletion && window.alphaValue == 1 && renderer.hasFrameForTesting
+            print("Opening reversal: staleCompletion=\(staleCompletion), visible=\(window.alphaValue == 1)")
             renderer.failNextCompletion = true
             overlay.finishOpening()
             let failureDeadline = Date().addingTimeInterval(2)
