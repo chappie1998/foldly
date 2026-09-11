@@ -69,9 +69,8 @@ final class MetalOverlayView: MTKView, MTKViewDelegate, @unchecked Sendable {
             reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
         let source = CIImage(cvPixelBuffer: buffer)
         let bent = BendRenderer.image(source, parameters: eased)
-        let black = CIImage(color: .black).cropped(to: source.extent)
         let size = CGSize(width: drawable.texture.width, height: drawable.texture.height)
-        let output = bent.composited(over: black).transformed(by: .init(
+        let output = bent.transformed(by: .init(
             scaleX: size.width / source.extent.width, y: size.height / source.extent.height))
         context.render(output, to: drawable.texture, commandBuffer: commandBuffer,
                        bounds: .init(origin: .zero, size: size), colorSpace: colorSpace)

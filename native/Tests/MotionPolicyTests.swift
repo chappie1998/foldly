@@ -8,14 +8,21 @@ import CoreImage
         }
         let size = CGSize(width: 1000, height: 600)
         let nearOpen = BendGeometry.calculate(size: size, parameters: .init(angle: 104, perspective: 0.7, blur: 0.7, shadow: 0.5, style: .frost))
-        check(nearOpen.outputHeight < size.height, "fold must begin below the fixed 105-degree boundary")
+        check(nearOpen.outputHeight > size.height && nearOpen.topExpansion > 0, "fold must begin below the fixed 105-degree boundary")
         for angle in [105.0, 106, 120] {
             let flat = BendGeometry.calculate(size: size, parameters: .init(angle: angle, perspective: 0.7, blur: 0.7, shadow: 0.5, style: .frost))
-            check(flat.openness == 1 && flat.outputHeight == size.height && flat.bottomInset == 0, "desktop must stay flat at or above 105 degrees")
+            check(flat.openness == 1 && flat.outputHeight == size.height && flat.topExpansion == 0, "desktop must stay flat at or above 105 degrees")
         }
-        check(nearOpen.outputHeight / size.height > 0.999, "fold must ease gently away from open, without a linear cut")
+        check(nearOpen.outputHeight / size.height < 1.001, "fold must ease gently away from open, without a linear cut")
         let halfway = BendGeometry.calculate(size: size, parameters: .init(angle: 60, perspective: 0.7, blur: 0.7, shadow: 0.5, style: .frost))
-        check(halfway.outputHeight / size.height > 0.75, "half-fold must preserve the website's taller projection")
+        check(halfway.outputHeight / size.height > 1 && halfway.outputHeight / size.height < 1.1, "half-fold must use the website's subtle desktop projection")
+        for strength in [0.0, 0.25, 0.7, 1] {
+            for angle in stride(from: 15.0, through: 105, by: 1) {
+                let geometry = BendGeometry.calculate(size: size, parameters: .init(angle: angle, perspective: strength, blur: 0.7, shadow: 0.5, style: .frost))
+                check(geometry.outputHeight >= size.height && geometry.topExpansion >= 0,
+                      "every angle and perspective setting must cover the display without black borders")
+            }
+        }
         var gate = CaptureGate()
         check(gate.update(angle: 120, allowed: true) == .start, "Enable must start capture immediately, even while open")
         for angle in [120.0, 105, 104, 60, 15, 105, 120, 60, 120] {

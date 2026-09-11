@@ -385,10 +385,11 @@ private struct BendyMacBookPreview: View {
                         }
                     }
                     .frame(height: geometry.size.height, alignment: .bottom)
-                    .clipShape(BendyDesktopShape(bottomInset: closure * perspective * 0.07))
                     .blur(radius: style == .frost ? closure * (0.8 + blur * 3.5) : closure * blur * 0.35)
                     .brightness(-closure * (style == .shade ? 0.24 : 0.06))
+                    .rotation3DEffect(.degrees(-closure * 12.075 * max(0.25, perspective)), axis: (x: 1, y: 0, z: 0), anchor: .bottom, perspective: 0.5)
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .bottom)
+                    .clipped()
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: angle)
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: style)
                 }
@@ -445,26 +446,6 @@ private struct BendyMacBookPreview: View {
             Color(red: 0.31, green: 0.61, blue: 0.84)
         ]
         return colors[item % colors.count]
-    }
-}
-
-private struct BendyDesktopShape: Shape {
-    var bottomInset: Double
-
-    var animatableData: Double {
-        get { bottomInset }
-        set { bottomInset = newValue }
-    }
-
-    func path(in rect: CGRect) -> Path {
-        let inset = rect.width * bottomInset
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX - inset, y: rect.maxY))
-        path.addLine(to: CGPoint(x: inset, y: rect.maxY))
-        path.closeSubpath()
-        return path
     }
 }
 

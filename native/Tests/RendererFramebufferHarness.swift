@@ -106,7 +106,9 @@ enum RendererFramebufferHarness {
                     if b > r + 30 && b > g + 30 { blue += 1 }
                 }
                 print("drawable=\(width)x\(height) status=\(command.status.rawValue) nonblack=\(nonblack) red=\(red) green=\(green) blue=\(blue) error=\(String(describing: command.error))")
-                let valid = command.status == .completed && nonblack > 10_000 && min(red, green, blue) > 1_000
+                // Every source pixel is bright. Any black output is an exposed
+                // canvas, including the top band caused by shrinking the lid.
+                let valid = command.status == .completed && nonblack == width * height && min(red, green, blue) > 1_000
                 DispatchQueue.main.async {
                     guard !finished else { return }
                     completedFrames += 1

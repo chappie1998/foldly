@@ -6,14 +6,18 @@ enum BendyStyle: String, CaseIterable, Identifiable { case silk = "Silk", shade 
 struct BendParameters { var angle: Double; var clearAngle: Double = 105; var perspective: Double; var blur: Double; var shadow: Double; var style: BendyStyle }
 
 struct BendGeometry {
-    let openness: CGFloat; let bottomInset: CGFloat; let outputHeight: CGFloat
+    let openness: CGFloat; let topExpansion: CGFloat; let outputHeight: CGFloat
     static func calculate(size: CGSize, parameters: BendParameters) -> BendGeometry {
         let openness = CGFloat(min(1, max(0, (parameters.angle - 15) / max(1, parameters.clearAngle - 15))))
         let closure = 1 - openness
-        let rotation = closure * 74 * .pi / 180
+        // Match the website's desktop-surface tilt, not its outer laptop lid.
+        // The physical lid already rotates in the user's hands. Perspective
+        // brings the top edge toward the viewer, beyond the display's crop.
+        let rotation = closure * 12.075 * CGFloat(min(1, max(0.25, parameters.perspective))) * .pi / 180
+        let projection = 1 / (1 - 0.5 * sin(rotation))
         return .init(openness: openness,
-                     bottomInset: size.width * sin(rotation) * CGFloat(min(1, max(0, parameters.perspective))) * 0.065,
-                     outputHeight: size.height * cos(rotation))
+                     topExpansion: size.width * (projection - 1) / 2,
+                     outputHeight: size.height * cos(rotation) * projection)
     }
 }
 
@@ -36,18 +40,14 @@ enum BendRenderer {
             "inputRVector": CIVector(x: dim, y: 0, z: 0, w: 0), "inputGVector": CIVector(x: 0, y: dim, z: 0, w: 0),
             "inputBVector": CIVector(x: 0, y: 0, z: dim, w: 0), "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
             "inputBiasVector": CIVector(x: wash * 0.94, y: wash * 0.94, z: wash * 0.98, w: 0)])
-        let mask = CIFilter(name: "CIRoundedRectangleGenerator", parameters: [
-            "inputExtent": CIVector(cgRect: extent), "inputRadius": extent.height * 0.025 * closure,
-            "inputColor": CIColor.white])!.outputImage!.cropped(to: extent)
-        prepared = prepared.applyingFilter("CIBlendWithAlphaMask", parameters: [
-            kCIInputBackgroundImageKey: CIImage(color: .clear).cropped(to: extent), "inputMaskImage": mask])
         let folded = prepared.applyingFilter("CIPerspectiveTransform", parameters: [
-            "inputBottomLeft": CIVector(x: extent.minX + geometry.bottomInset, y: extent.minY),
-            "inputBottomRight": CIVector(x: extent.maxX - geometry.bottomInset, y: extent.minY),
-            "inputTopLeft": CIVector(x: extent.minX, y: extent.minY + geometry.outputHeight),
-            "inputTopRight": CIVector(x: extent.maxX, y: extent.minY + geometry.outputHeight)])
-        // Feather the projected silhouette, including its moving top edge.
-        return folded.applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: extent.height * 0.002 * closure]).cropped(to: extent)
+            "inputBottomLeft": CIVector(x: extent.minX, y: extent.minY),
+            "inputBottomRight": CIVector(x: extent.maxX, y: extent.minY),
+            "inputTopLeft": CIVector(x: extent.minX - geometry.topExpansion, y: extent.minY + geometry.outputHeight),
+            "inputTopRight": CIVector(x: extent.maxX + geometry.topExpansion, y: extent.minY + geometry.outputHeight)])
+        // Clip inside the physical display, as the website's screen-well does.
+        // Back subpixel sampling at the hinge with the same treated desktop.
+        return folded.cropped(to: extent).composited(over: prepared).cropped(to: extent)
     }
 }
 
@@ -57,25 +57,36 @@ enum BendySelfTest {
         let context = CIContext()
         let testParameters = { (angle: Double) in BendParameters(angle: angle, perspective: 0.75, blur: 0.4, shadow: 0.6, style: .silk) }
         let open = BendGeometry.calculate(size: bounds.size, parameters: testParameters(105))
-        guard open.openness == 1, open.bottomInset == 0, open.outputHeight == bounds.height,
+        guard open.openness == 1, open.topExpansion == 0, open.outputHeight == bounds.height,
               BendRenderer.image(source, parameters: testParameters(105)).extent == source.extent else {
             fputs("Geometry self-test failed: open state is not identity\n", stderr); return false
         }
         for angle in [15.0, 60.0, 105.0] {
             let geometry = BendGeometry.calculate(size: bounds.size, parameters: testParameters(angle))
-            let topWidth = bounds.width, bottomWidth = bounds.width - 2 * geometry.bottomInset
-            guard geometry.openness.isFinite, geometry.bottomInset.isFinite, geometry.outputHeight.isFinite,
-                  geometry.bottomInset >= 0, bottomWidth > 0, bottomWidth <= topWidth,
-                  geometry.outputHeight > 0, geometry.outputHeight <= bounds.height,
+            let topWidth = bounds.width + 2 * geometry.topExpansion, bottomWidth = bounds.width
+            guard geometry.openness.isFinite, geometry.topExpansion.isFinite, geometry.outputHeight.isFinite,
+                  geometry.topExpansion >= 0, bottomWidth > 0, bottomWidth <= topWidth,
+                  geometry.outputHeight >= bounds.height, geometry.outputHeight < bounds.height * 1.2,
                   angle == 105 || topWidth > bottomWidth else {
                 fputs("Geometry self-test failed at \(Int(angle))°\n", stderr); return false
             }
         }
         for style in BendyStyle.allCases { for angle in [15.0, 60.0, 105.0] {
             let p = BendParameters(angle: angle, perspective: 0.75, blur: 0.4, shadow: 0.6, style: style), output = BendRenderer.image(source, parameters: p)
-            guard output.extent.width.isFinite, output.extent.height.isFinite, context.createCGImage(output, from: output.extent.integral) != nil else {
+            guard output.extent == bounds, context.createCGImage(output, from: output.extent.integral) != nil else {
                 fputs("Render self-test failed: \(style.rawValue) at \(Int(angle))°, extent \(output.extent)\n", stderr)
                 return false
+            }
+            var pixels = [UInt8](repeating: 0, count: 640 * 400 * 4)
+            pixels.withUnsafeMutableBytes { bytes in
+                context.render(output, toBitmap: bytes.baseAddress!, rowBytes: 640 * 4,
+                               bounds: bounds, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
+            }
+            for i in stride(from: 0, to: pixels.count, by: 4) {
+                guard min(pixels[i], pixels[i + 1], pixels[i + 2]) > 32, pixels[i + 3] == 255 else {
+                    fputs("Coverage self-test failed: exposed canvas in \(style.rawValue) at \(Int(angle))°\n", stderr)
+                    return false
+                }
             }
         }}
         print("Foldly render self-test passed (3 styles × 3 angles)."); return true
