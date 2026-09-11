@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f8fa" />
+    <meta name="description" content="Foldly adds a little character to closing your MacBook. Play with the lid angle, bend style, and wallpaper in this interactive studio." />
+    <title>Foldly — your desktop has a softer side</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#playground" aria-label="Foldly home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M5.5 7.5h21v13.2c-5.7-3.5-14.7-3.5-21 0V7.5Z"/><path d="M4 23.1c6.7-4 17.3-4 24 0"/></svg>
+        <span>Foldly</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a class="nav-link active" href="#playground">The playground</a>
+        <button class="nav-link button-link" type="button" data-open-dialog="how-dialog">How it works</button>
+      </nav>
+      <button class="download-button" type="button" data-open-dialog="download-dialog"><span>Get Foldly</span> <span class="button-suffix">for Mac</span></button>
+    </header>
+
+    <main id="playground" class="studio">
+      <div class="hero-copy">
+        <p>Your MacBook. With a softer side.</p>
+        <h1>A little flex.<br />A lot of personality.</h1>
+      </div>
+
+      <section class="playground" aria-label="Interactive Foldly playground">
+        <div class="machine-column">
+          <div class="machine-wrap">
+            <div class="laptop-stage" id="laptop-stage" role="slider" tabindex="0" aria-label="MacBook lid angle. Drag vertically or use arrow keys." aria-valuemin="15" aria-valuemax="120" aria-valuenow="110" aria-valuetext="110 degrees, nearly open">
+              <div class="laptop" aria-hidden="true">
+                <div class="screen-lid">
+                  <div class="screen-well">
+                    <div class="desktop-surface" id="desktop-surface">
+                      <svg class="wallpaper" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid slice">
+                        <defs>
+                          <linearGradient id="wall-base" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--wall-a)"/><stop offset="1" stop-color="var(--wall-b)"/></linearGradient>
+                          <linearGradient id="ribbon-one" x1="0" y1="0" x2="1" y2="1"><stop stop-color="var(--ribbon-a)"/><stop offset="1" stop-color="var(--ribbon-b)"/></linearGradient>
+                          <linearGradient id="ribbon-two" x1="1" y1="0" x2="0" y2="1"><stop stop-color="var(--ribbon-c)"/><stop offset="1" stop-color="var(--ribbon-d)"/></linearGradient>
+                          <filter id="soft-glow"><feGaussianBlur stdDeviation="22"/></filter>
+                        </defs>
+                        <rect width="960" height="600" fill="url(#wall-base)"/>
+                        <ellipse cx="270" cy="155" rx="310" ry="240" fill="var(--glow-a)" opacity=".55" filter="url(#soft-glow)"/>
+                        <ellipse cx="810" cy="470" rx="290" ry="250" fill="var(--glow-b)" opacity=".72" filter="url(#soft-glow)"/>
+                        <path d="M-50 474C122 446 146 192 350 213c190 20 177 219 371 183 122-23 178-147 290-190v423H-50Z" fill="url(#ribbon-one)" opacity=".9"/>
+                        <path d="M-34 563c205-34 246-251 437-225 167 23 220 168 383 126 84-22 134-83 210-114v271H-34Z" fill="url(#ribbon-two)" opacity=".84"/>
+                        <path d="M-20 531c184-38 250-181 414-157 162 24 254 146 422 79 68-27 121-64 170-74" fill="none" stroke="rgba(255,255,255,.48)" stroke-width="4"/>
+                      </svg>
+                      <div class="menu-bar">
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13.4 10.7c0-2 1.6-3 1.7-3-1-.9-2.5-1-3-.9-1.3.1-2.5.8-3.1.8-.6 0-1.6-.8-2.7-.7-1.4 0-2.7.8-3.4 2-1.5 2.5-.4 6.3 1 8.4.7 1 1.6 2.1 2.7 2 1.1 0 1.5-.7 2.9-.7 1.3 0 1.7.7 2.9.7 1.2 0 1.9-1 2.6-2 .8-1.2 1.2-2.4 1.2-2.5-.1 0-2.8-1.1-2.8-4.1ZM12.4 5.4c.6-.8 1.1-1.9 1-3-.9 0-2 .6-2.7 1.3-.6.7-1.1 1.8-1 2.8 1 .1 2-.5 2.7-1.1Z"/></svg>
+                        <span class="menu-name">Finder</span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span class="menu-spacer"></span>
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 7.4c4.5-4.1 11.5-4.1 16 0l-1.5 1.7a9.8 9.8 0 0 0-13 0L2 7.4Zm3 3.4a7.6 7.6 0 0 1 10 0l-1.6 1.7a5.3 5.3 0 0 0-6.8 0L5 10.8Zm3.2 3.3a2.7 2.7 0 0 1 3.6 0L10 16l-1.8-1.9Z"/></svg><span>9:41</span>
+                      </div>
+                      <div class="desktop-fold-light"></div>
+                      <div class="dock" aria-hidden="true">
+                        <span class="dock-icon finder"><i></i></span><span class="dock-icon calendar"><b>10</b></span><span class="dock-icon notes"><i></i></span><span class="dock-icon photos"><i></i></span><span class="dock-icon music"><i>♪</i></span><span class="dock-divider"></span><span class="dock-icon folder"><i></i></span>
+                      </div>
+                      <div class="screen-shade"></div><div class="screen-frost"></div>
+                    </div>
+                    <div class="camera-notch"><i></i></div><div class="screen-gloss"></div>
+                  </div>
+                </div>
+                <div class="hinge"></div>
+                <div class="base"><div class="base-highlight"></div><div class="trackpad-line"></div><div class="front-notch"></div></div>
+                <div class="under-shadow"></div>
+              </div>
+            </div>
+            <div class="drag-note"><span class="drag-grip" aria-hidden="true"><i></i><i></i><i></i></span><span>Drag the screen</span><output id="angle-output" for="angle">110°</output></div>
+          </div>
+        </div>
+
+        <aside class="remote" aria-label="Foldly controls">
+          <div class="remote-head">
+            <div><span class="remote-kicker">Interactive preview</span><h2>Give it a fold.</h2></div>
+            <button class="icon-button reset-button" type="button" id="reset" aria-label="Reset all settings" title="Reset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.9 8.8A7.7 7.7 0 1 1 4.5 14M4.9 8.8V4.7m0 4.1H9"/></svg></button>
+          </div>
+
+          <fieldset class="style-picker">
+            <legend>Bend style</legend>
+            <div class="style-grid">
+              <button class="style-card selected" type="button" data-style="silk" aria-pressed="true"><span class="mini-screen silk"><i></i></span><span>Silk</span></button>
+              <button class="style-card" type="button" data-style="shade" aria-pressed="false"><span class="mini-screen shade"><i></i></span><span>Shade</span></button>
+              <button class="style-card" type="button" data-style="frost" aria-pressed="false"><span class="mini-screen frost"><i></i></span><span>Frost</span></button>
+            </div>
+          </fieldset>
+
+          <div class="angle-control">
+            <div class="control-label"><label for="angle">Lid angle</label><output id="angle-side-output" for="angle">110°</output></div>
+            <input id="angle" type="range" min="15" max="120" value="110" step="1" />
+            <div class="range-extents" aria-hidden="true"><span>Closed</span><span>Open</span></div>
+          </div>
+
+          <div class="transport">
+            <button class="play-button" type="button" id="play" aria-pressed="false"><span class="play-icon" aria-hidden="true"></span><span class="play-label">Play the fold</span></button>
+            <button class="sound-button" type="button" id="sound" aria-pressed="false" aria-label="Turn sound on">
+              <svg class="sound-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Zm10-1.5a5 5 0 0 1 0 7m2-9a8 8 0 0 1 0 11"/></svg>
+              <svg class="sound-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Zm11-1 5 5m0-5-5 5"/></svg>
+            </button>
+          </div>
+
+          <fieldset class="wallpaper-picker"><legend>Wallpaper</legend><div class="swatches"><button class="swatch selected" type="button" data-wallpaper="orchid" aria-label="Orchid wallpaper" aria-pressed="true"></button><button class="swatch" type="button" data-wallpaper="tide" aria-label="Tide wallpaper" aria-pressed="false"></button><button class="swatch" type="button" data-wallpaper="dusk" aria-label="Dusk wallpaper" aria-pressed="false"></button><button class="swatch" type="button" data-wallpaper="citrus" aria-label="Citrus wallpaper" aria-pressed="false"></button></div></fieldset>
+
+          <details class="fine-tune">
+            <summary>Fine tune <span>3 controls</span></summary>
+            <div class="fine-controls">
+              <label for="strength"><span>Bend strength</span><output id="strength-output">72</output></label><input id="strength" type="range" min="25" max="100" value="72" />
+              <label for="blur"><span>Edge softness</span><output id="blur-output">2</output></label><input id="blur" type="range" min="0" max="12" value="2" />
+              <label for="shadow"><span>Fold shadow</span><output id="shadow-output">34</output></label><input id="shadow" type="range" min="0" max="80" value="34" />
+            </div>
+          </details>
+          <p class="shortcut-note">Drag the screen or use the slider</p>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="site-footer"><p>Made for a little everyday delight.</p><div class="footer-links"><button type="button" data-open-dialog="how-dialog">How it works</button><a href="https://x.com/adrianabelarde_/status/2097998552517759106" target="_blank" rel="noreferrer">Original inspiration <span aria-hidden="true">↗</span></a></div></footer>
+
+    <dialog id="how-dialog" class="modal"><div class="modal-inner">
+      <button class="modal-close" type="button" data-close-dialog aria-label="Close dialog">×</button>
+      <svg class="modal-illustration" viewBox="0 0 180 100" aria-hidden="true"><rect x="25" y="10" width="130" height="73" rx="7"/><path d="M18 86h144l-13 7H31l-13-7Z"/><path d="M35 70c30-15 70-15 110 0"/></svg>
+      <p class="modal-kicker">Behind the bend</p><h2>It follows your lid.</h2>
+      <p>The Mac companion reads the MacBook’s real lid sensor and shapes the desktop as you close it. This page is an interactive preview—drag the screen or use the slider to try the effect.</p>
+      <button class="secondary-button" type="button" data-close-dialog>Back to the playground</button>
+    </div></dialog>
+
+    <dialog id="download-dialog" class="modal download-modal"><div class="modal-inner">
+      <button class="modal-close" type="button" data-close-dialog aria-label="Close dialog">×</button><div class="app-icon" aria-hidden="true"><span></span></div>
+      <p class="modal-kicker">Local build · Apple silicon</p><h2>Bring the bend to your desktop.</h2>
+      <p>The native companion uses the MacBook’s lid sensor when the model exposes it; sensor availability varies. It needs macOS 14 or later and Screen Recording permission. Screen capture stays on while Foldly is enabled, including with the lid open. Pause or disable Foldly to stop capture. On unsupported hardware, you can still use the manual preview.</p>
+      <a class="primary-download" href="/Foldly.zip" download>Download Foldly.zip <span>↓</span></a>
+      <p class="download-note">After downloading, unzip Foldly and move it to Applications.</p>
+    </div></dialog>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
