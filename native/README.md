@@ -2,6 +2,8 @@
 
 Foldly is an independent native recreation inspired by [Adrian Abelarde's Bendy concept](https://x.com/adrianabelarde_/status/2097998552517759106). It folds the built-in MacBook desktop image as the lid closes. It is not the original app or an official binary from the concept's author.
 
+For a compiled app, download the [private 0.1.0 preview release](https://github.com/chappie1998/foldly/releases/tag/v0.1.0) and follow the [macOS installation guide](../INSTALL.md). The DMG and ZIP support Apple silicon Macs running macOS 14 or newer; this preview is ad-hoc signed and not Apple-notarized.
+
 ## Build and run locally
 
 Requirements: Apple silicon Mac, macOS 14 or newer, and Apple's Command Line Tools.
@@ -17,7 +19,7 @@ The local build is ad-hoc signed. macOS may warn about an unsigned download when
 
 Foldly launches disabled. **Enable** starts screen capture immediately and keeps one session running through folding and reopening, including while the lid is open. Custom capture controls are deferred on the `fix/configurable-capture-angle` branch. The visual fold has a fixed 105° boundary; capture does not restart when crossing it. Screen Recording permission is needed when enabling. The footer shows whether capture is off, starting, or active. It captures only the built-in display, explicitly excludes Foldly's own process, keeps frames in memory, and never writes or uploads them. Disable, Pause, sleep, display changes, sensor loss, and capture errors immediately hide the overlay and stop capture. Escape pauses while Foldly is focused; a global Escape monitor works only when macOS already permits it, and Foldly never requests Accessibility access. The menu bar Pause action remains available above the noninteractive overlay.
 
-The display animates toward each sensor reading at a target of 60 fps, while capture supplies desktop updates at 30 fps. Reopening eases the image back to flat at 105° and hides the overlay; capture continues until paused or disabled. The desktop uses the website's subtle perspective tilt inside the physical display, anchored at the bottom and cropped to fill every edge. It does not shrink the entire image into a black canvas. Frost adds progressive blur and a light tint. Reduce Motion is respected.
+The display animates toward each sensor reading at a target of 60 fps, while capture supplies desktop updates at 30 fps. Reopening eases the image back to flat at 105° and hides the overlay; capture continues until paused or disabled. The desktop uses the website's subtle perspective tilt inside the physical display, anchored at the bottom and cropped to fill every edge. It does not shrink the entire image into a black canvas. Blur begins at the top while the middle and bottom stay sharp, then spreads downward as the lid closes. Frost uses the strongest blur and a light tint. The native effect uses Core Image's variable-radius blur; the small settings preview approximates the transition with a masked overlay. Reduce Motion is respected.
 
 The overlay stays hidden throughout capture startup, so it cannot cover the initial macOS permission request. While capture runs, Foldly temporarily hides its effect when System Settings is foreground, an app-owned modal is present, or a visible dialog is detected from Apple's UserNotificationCenter, SecurityAgent, or CoreServicesUIAgent. It restores the effect when the dialog closes without restarting capture. Detection uses app identity and visible window metadata, not dialog text or Accessibility access. Other applications' arbitrary dialogs are not classified by this guard.
 
@@ -30,6 +32,8 @@ The sensor reader looks only for an Apple HID device with vendor `0x05AC`, usage
 ## Renderer regression checks
 
 Run `zsh native/Tests/run-motion-tests.sh` for continuous capture across lid movement, startup/teardown ordering, and frame-rate-independent motion tests.
+
+Run `zsh native/Tests/run-gradient-tests.sh` in a graphical macOS session to verify actual stripe sharpness at the top, middle, and bottom, downward blur progression, opaque edges, and translated image coordinates. Run the renderer harness with `--no-readback --stress` to measure its deepest fold at maximum Frost blur.
 
 Run `zsh native/Tests/run-renderer-harness.sh` in a graphical macOS session. This uses the actual overlay controller with a generated four-color image, checks that its Metal view attaches to a nonzero-sized window, verifies that every pixel remains nonblack across 90 GPU frames, and checks reopening and reclosing without a new frame. It also injects a completion failure to verify immediate hide/clear. It does not request Screen Recording or capture your desktop. The app's `--self-test` also checks full opaque coverage for all three styles at open, half-closed, and closed angles.
 
