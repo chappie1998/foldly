@@ -8,6 +8,7 @@ CACHE="$SCRIPT_DIR/.build/module-cache"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$CACHE" "$SCRIPT_DIR/../public"
 cp "$SCRIPT_DIR/Info.plist" "$APP/Contents/Info.plist"
 cp "$SCRIPT_DIR/Resources/fold-finish.wav" "$APP/Contents/Resources/fold-finish.wav"
+cp "$SCRIPT_DIR/../LICENSE" "$APP/Contents/Resources/LICENSE"
 
 xcrun swiftc \
   -swift-version 5 \

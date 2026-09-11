@@ -4,18 +4,17 @@
 
 - Apple silicon MacBook (M-series), macOS 14 Sonoma or newer.
 - Screen Recording permission to render your desktop locally.
-- Access to this private GitHub repository to download the release.
 
 Intel Macs are not supported by this binary. Automatic lid tracking depends on whether your MacBook exposes its lid-angle sensor. If it does not, turn off **Follow MacBook lid** and use the manual angle slider. Foldly applies the effect only to the built-in display.
 
 ## Download and install
 
 1. Quit any running copy of Foldly.
-2. Open the [0.1.0 preview release](https://github.com/chappie1998/foldly/releases/tag/v0.1.0) and download **Foldly-0.1.0-macos-arm64.dmg** under **Assets**.
+2. Open the [0.1.1 preview release](https://github.com/chappie1998/foldly/releases/tag/v0.1.1) and download **Foldly-0.1.1-macos-arm64.dmg** under **Assets**.
 3. Open the DMG, then drag **Foldly.app** to the **Applications** shortcut. When updating an existing installation, replace the old app.
 4. Eject the Foldly disk image. Open **Foldly** from Applications, so future launches use the same installed copy.
 
-Alternatively, download **Foldly-0.1.0-macos-arm64.zip**, double-click to extract it, and move **Foldly.app** to Applications. The automatically generated GitHub “Source code” archives do not contain a compiled app.
+Alternatively, download **Foldly-0.1.1-macos-arm64.zip**, double-click to extract it, and move **Foldly.app** to Applications. The automatically generated GitHub “Source code” archives do not contain a compiled app.
 
 ## First-launch approval
 
@@ -72,7 +71,7 @@ Install Apple's Command Line Tools if needed:
 xcode-select --install
 ```
 
-Clone the private repository using your GitHub access, then build:
+Clone the public repository, then build:
 
 ```sh
 git clone https://github.com/chappie1998/foldly.git

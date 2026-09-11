@@ -39,17 +39,37 @@ struct FoldBlurProfile {
         return t * t * (3 - 2 * t)
     }
 
-    func mask(in extent: CGRect) -> CIImage {
+    func mask(in extent: CGRect, lowerColor: CIColor = .black, upperColor: CIColor = .white) -> CIImage {
         CIFilter(name: "CISmoothLinearGradient", parameters: [
             "inputPoint0": CIVector(x: extent.midX, y: extent.minY + extent.height * clearUntil),
             "inputPoint1": CIVector(x: extent.midX, y: extent.minY + extent.height * fullFrom),
-            "inputColor0": CIColor.black,
-            "inputColor1": CIColor.white
+            "inputColor0": lowerColor,
+            "inputColor1": upperColor
         ])!.outputImage!.cropped(to: extent)
     }
 }
 
 enum BendRenderer {
+    static func shadowOpacity(style: BendyStyle, amount: Double, closure: Double) -> Double {
+        let peak = style == .frost ? 0.48 : style == .shade ? 0.78 : 0.74
+        return peak * (0.4 + 0.6 * min(1, max(0, amount))) * (1 - exp(-4 * min(1, max(0, closure))))
+    }
+
+    static func shade(_ source: CIImage, style: BendyStyle, amount: Double, closure: Double) -> CIImage {
+        guard closure > 0 else { return source }
+        let opacity = shadowOpacity(style: style, amount: amount, closure: closure)
+        let gradient = FoldBlurProfile(closure: closure).mask(in: source.extent,
+            lowerColor: CIColor(red: 0.015, green: 0.015, blue: 0.035, alpha: 0),
+            upperColor: CIColor(red: 0.015, green: 0.015, blue: 0.035, alpha: opacity))
+        return gradient.composited(over: source).cropped(to: source.extent)
+    }
+
+    static func blurRadius(style: BendyStyle, amount: Double, closure: Double, imageHeight: Double) -> Double {
+        let base = style == .frost ? 3.0 : style == .silk ? 0.25 : 0
+        let range = style == .frost ? 17.0 : 8.0
+        return max(0, (amount * range + base) * closure * imageHeight / 600 * 2)
+    }
+
     static func blur(_ source: CIImage, radius: Double, closure: Double) -> CIImage {
         guard radius > 0.01, closure > 0 else { return source }
         let extent = source.extent
@@ -65,17 +85,18 @@ enum BendRenderer {
         let geometry = BendGeometry.calculate(size: extent.size, parameters: parameters)
         let closure = Double(1 - geometry.openness)
         guard closure > 0.0001 else { return source }
-        let style: (Double, Double, Double) = parameters.style == .frost ? (3.0, 0.84, 0.96) : parameters.style == .shade ? (0, 0.78, 0.84) : (0.25, 1.05, 1.04)
-        let radius = max(0, (parameters.blur * (parameters.style == .frost ? 17 : 8) + style.0) * closure * extent.height / 600)
+        let style: (Double, Double) = parameters.style == .frost ? (0.84, 0.96) : parameters.style == .shade ? (0.78, 0.84) : (1.05, 1.04)
+        let radius = blurRadius(style: parameters.style, amount: parameters.blur, closure: closure, imageHeight: extent.height)
         var prepared = blur(source, radius: radius, closure: closure)
-        prepared = prepared.applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 1 + (style.1 - 1) * closure, kCIInputContrastKey: 1 + (style.2 - 1) * closure])
+        prepared = prepared.applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 1 + (style.0 - 1) * closure, kCIInputContrastKey: 1 + (style.1 - 1) * closure])
         let frost = parameters.style == .frost
         let wash = frost ? closure * 0.14 : 0
-        let dim = max(0.3, 1 - closure * ((frost ? 0.10 : 0.24) + (parameters.style == .shade ? 0.18 : 0) + parameters.shadow * (frost ? 0.12 : 0.24))) * (1 - wash)
+        let dim = (1 - closure * (frost ? 0.08 : parameters.style == .shade ? 0.26 : 0.14)) * (1 - wash)
         prepared = prepared.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": CIVector(x: dim, y: 0, z: 0, w: 0), "inputGVector": CIVector(x: 0, y: dim, z: 0, w: 0),
             "inputBVector": CIVector(x: 0, y: 0, z: dim, w: 0), "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
             "inputBiasVector": CIVector(x: wash * 0.94, y: wash * 0.94, z: wash * 0.98, w: 0)])
+        prepared = shade(prepared, style: parameters.style, amount: parameters.shadow, closure: closure)
         let folded = prepared.applyingFilter("CIPerspectiveTransform", parameters: [
             "inputBottomLeft": CIVector(x: extent.minX, y: extent.minY),
             "inputBottomRight": CIVector(x: extent.maxX, y: extent.minY),

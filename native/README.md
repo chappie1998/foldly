@@ -2,7 +2,7 @@
 
 Foldly is an independent native recreation inspired by [Adrian Abelarde's Bendy concept](https://x.com/adrianabelarde_/status/2097998552517759106). It folds the built-in MacBook desktop image as the lid closes. It is not the original app or an official binary from the concept's author.
 
-For a compiled app, download the [private 0.1.0 preview release](https://github.com/chappie1998/foldly/releases/tag/v0.1.0) and follow the [macOS installation guide](../INSTALL.md). The DMG and ZIP support Apple silicon Macs running macOS 14 or newer; this preview is ad-hoc signed and not Apple-notarized.
+For a compiled app, download the [0.1.1 preview release](https://github.com/chappie1998/foldly/releases/tag/v0.1.1) and follow the [macOS installation guide](../INSTALL.md). Foldly is open source under the [MIT license](../LICENSE). The DMG and ZIP support Apple silicon Macs running macOS 14 or newer; this preview is ad-hoc signed and not Apple-notarized.
 
 ## Build and run locally
 
@@ -34,6 +34,8 @@ The sensor reader looks only for an Apple HID device with vendor `0x05AC`, usage
 Run `zsh native/Tests/run-motion-tests.sh` for continuous capture across lid movement, startup/teardown ordering, and frame-rate-independent motion tests.
 
 Run `zsh native/Tests/run-gradient-tests.sh` in a graphical macOS session to verify actual stripe sharpness at the top, middle, and bottom, downward blur progression, opaque edges, and translated image coordinates. Run the renderer harness with `--no-readback --stress` to measure its deepest fold at maximum Frost blur.
+
+Version 0.1.1 doubles the maximum blur radius for every style while preserving the spatial gradient. A charcoal shadow follows that gradient, darkest at the top and fading toward the hinge; Fold shadow controls its strength, and Frost uses lighter shading. The preview shares the radius and shadow profile at its smaller size. The gradient tests check stronger lower-screen Silk blur, Frost strength, and dark-to-clear shading without black or transparent borders.
 
 Run `zsh native/Tests/run-renderer-harness.sh` in a graphical macOS session. This uses the actual overlay controller with a generated four-color image, checks that its Metal view attaches to a nonzero-sized window, verifies that every pixel remains nonblack across 90 GPU frames, and checks reopening and reclosing without a new frame. It also injects a completion failure to verify immediate hide/clear. It does not request Screen Recording or capture your desktop. The app's `--self-test` also checks full opaque coverage for all three styles at open, half-closed, and closed angles.
 

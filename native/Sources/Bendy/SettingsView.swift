@@ -353,12 +353,6 @@ private struct BendyMacBookPreview: View {
                             .frame(height: geometry.size.height * 0.54)
                             .opacity(0.88)
 
-                        LinearGradient(
-                            colors: [.clear, .black.opacity(closure * (0.18 + shadow * 0.34 + (style == .shade ? 0.18 : 0)))],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-
                         VStack(spacing: 0) {
                             HStack(spacing: 4) {
                                 Circle().frame(width: 3, height: 3)
@@ -385,7 +379,12 @@ private struct BendyMacBookPreview: View {
                         }
                     }
                     .frame(height: geometry.size.height, alignment: .bottom)
-                    .modifier(FoldPreviewBlur(radius: style == .frost ? closure * (0.8 + blur * 3.5) : closure * blur * 0.35, closure: closure))
+                    .modifier(FoldPreviewBlur(radius: BendRenderer.blurRadius(style: style, amount: blur, closure: closure, imageHeight: geometry.size.height), closure: closure))
+                    .overlay {
+                        Color(red: 0.015, green: 0.015, blue: 0.035)
+                            .opacity(BendRenderer.shadowOpacity(style: style, amount: shadow, closure: closure))
+                            .mask(FoldPreviewMask(closure: closure))
+                    }
                     .brightness(-closure * (style == .shade ? 0.24 : 0.06))
                     .rotation3DEffect(.degrees(-closure * 12.075 * max(0.25, perspective)), axis: (x: 1, y: 0, z: 0), anchor: .bottom, perspective: 0.5)
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .bottom)
@@ -454,16 +453,23 @@ private struct FoldPreviewBlur: ViewModifier {
     let closure: Double
 
     func body(content: Content) -> some View {
+        content.overlay {
+            content.blur(radius: radius, opaque: true).mask(FoldPreviewMask(closure: closure))
+        }
+    }
+}
+
+private struct FoldPreviewMask: View {
+    let closure: Double
+
+    var body: some View {
         let profile = FoldBlurProfile(closure: closure)
         // Sample the same smooth profile as Core Image, including its nonzero
         // hinge strength once the gradient extends below the display.
-        let mask = LinearGradient(stops: (0...16).map { step in
+        LinearGradient(stops: (0...16).map { step in
             let position = Double(step) / 16
             return .init(color: .white.opacity(profile.strength(at: 1 - position)), location: position)
         }, startPoint: .top, endPoint: .bottom)
-        content.overlay {
-            content.blur(radius: radius, opaque: true).mask(mask)
-        }
     }
 }
 

@@ -5,7 +5,7 @@ const root = process.cwd();
 const output = join(root, 'dist');
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
-for (const file of ['index.html', 'styles.css', 'app.js', 'logic.mjs']) await cp(join(root, file), join(output, file));
+for (const file of ['index.html', 'styles.css', 'app.js', 'logic.mjs', 'LICENSE']) await cp(join(root, file), join(output, file));
 const publicDir = join(root, 'public');
 for (const entry of await readdir(publicDir, { withFileTypes: true })) {
   if (entry.name === 'Bendy.zip' || entry.name === 'Hingely.zip') continue;

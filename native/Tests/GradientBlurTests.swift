@@ -52,8 +52,27 @@ import Foundation
         check(contrast(middle, y: 392) < contrast(original, y: 392) * 0.95, "light blur must reach the hinge by halfway closed")
         check(contrast(middle, y: bottom) > contrast(middle, y: top) + 15, "halfway bottom blur must stay lighter than the top")
         check(contrast(deep, y: bottom) < contrast(middle, y: bottom) * 0.8, "bottom blur must strengthen as the fold deepens")
+        // Exercise the actual style settings, not only a supplied test radius.
+        // Default Silk must visibly soften the lower half by halfway closed.
+        let silkRadius = BendRenderer.blurRadius(style: .silk, amount: 0.74, closure: 0.5, imageHeight: Double(height))
+        let silk = pixels(BendRenderer.blur(source, radius: silkRadius, closure: 0.5))
+        let previousSilk = pixels(BendRenderer.blur(source, radius: (0.74 * 8 + 0.25) * 0.5 * Double(height) / 600, closure: 0.5))
+        check(contrast(silk, y: 300) < contrast(previousSilk, y: 300) * 0.8, "Silk must blur lower-screen detail more strongly than the previous build")
+        let frostRadius = BendRenderer.blurRadius(style: .frost, amount: 0.74, closure: 0.5, imageHeight: Double(height))
+        let frost = pixels(BendRenderer.blur(source, radius: frostRadius, closure: 0.5))
+        check(contrast(frost, y: bottom) < contrast(silk, y: bottom), "Frost must remain stronger than Silk near the hinge")
+        print("Halfway Silk lower-half contrast: \(contrast(previousSilk, y: 300)) → \(contrast(silk, y: 300))")
         check(pixels(BendRenderer.blur(source, radius: 0, closure: 0.5)) == original, "zero radius preserves the image")
         check(pixels(BendRenderer.blur(source, radius: 20, closure: 0)) == original, "fully open preserves the image")
+        let white = CIImage(color: .white).cropped(to: bounds)
+        for style in BendyStyle.allCases {
+            let shaded = pixels(BendRenderer.shade(white, style: style, amount: 1, closure: 0.5))
+            let topValue = Int(shaded[(top * width + width / 2) * 4])
+            let bottomValue = Int(shaded[(bottom * width + width / 2) * 4])
+            check(topValue > 32 && bottomValue > topValue + 30, "fold shading must fade from a dark top to a visible lower desktop")
+            check(stride(from: 3, to: shaded.count, by: 4).allSatisfy { shaded[$0] == 255 }, "shading must preserve opaque coverage")
+        }
+        check(pixels(BendRenderer.shade(source, style: .shade, amount: 1, closure: 0)) == original, "open desktop must have no fold shading")
         for rendered in [early, middle, deep] {
             check(stride(from: 3, to: rendered.count, by: 4).allSatisfy { rendered[$0] == 255 }, "variable blur must not expose transparent borders")
         }
