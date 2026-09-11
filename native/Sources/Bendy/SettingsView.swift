@@ -455,12 +455,12 @@ private struct FoldPreviewBlur: ViewModifier {
 
     func body(content: Content) -> some View {
         let profile = FoldBlurProfile(closure: closure)
-        let mask = LinearGradient(stops: [
-            .init(color: .white, location: 0),
-            .init(color: .white, location: max(0, 1 - profile.fullFrom)),
-            .init(color: .clear, location: min(1, 1 - profile.clearUntil)),
-            .init(color: .clear, location: 1)
-        ], startPoint: .top, endPoint: .bottom)
+        // Sample the same smooth profile as Core Image, including its nonzero
+        // hinge strength once the gradient extends below the display.
+        let mask = LinearGradient(stops: (0...16).map { step in
+            let position = Double(step) / 16
+            return .init(color: .white.opacity(profile.strength(at: 1 - position)), location: position)
+        }, startPoint: .top, endPoint: .bottom)
         content.overlay {
             content.blur(radius: radius, opaque: true).mask(mask)
         }

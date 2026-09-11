@@ -23,14 +23,20 @@ struct BendGeometry {
 
 struct FoldBlurProfile {
     // Coordinates run from the hinge (0) to the top of the display (1).
-    // The clear region retreats toward the hinge as the lid closes.
+    // The clear region retreats beyond the hinge before halfway closed,
+    // giving the bottom a light blur while the top remains much stronger.
     let clearUntil: Double
     let fullFrom: Double
 
     init(closure: Double) {
         let progress = min(1, max(0, closure))
-        clearUntil = 0.82 - 0.94 * progress
-        fullFrom = min(1, clearUntil + 0.22 + 0.24 * progress)
+        clearUntil = 0.82 - 2.0 * progress
+        fullFrom = 0.97 - 0.36 * progress
+    }
+
+    func strength(at height: Double) -> Double {
+        let t = min(1, max(0, (height - clearUntil) / (fullFrom - clearUntil)))
+        return t * t * (3 - 2 * t)
     }
 
     func mask(in extent: CGRect) -> CIImage {
