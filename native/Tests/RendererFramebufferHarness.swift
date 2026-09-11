@@ -64,7 +64,9 @@ enum RendererFramebufferHarness {
         let displayID = (display.deviceDescription[.init("NSScreenNumber")] as! NSNumber).uint32Value
         guard overlay.configure(displayID: displayID) else { exit(EXIT_FAILURE) }
         window.title = "Foldly Synthetic Renderer Harness"
-        let parameters = BendParameters(angle: 61, perspective: 0.391, blur: 0.744, shadow: 0.58, style: .frost)
+        let parameters = CommandLine.arguments.contains("--stress")
+            ? BendParameters(angle: 15, perspective: 1, blur: 1, shadow: 1, style: .frost)
+            : BendParameters(angle: 61, perspective: 0.391, blur: 0.744, shadow: 0.58, style: .frost)
         overlay.prepare(parameters)
         guard !window.isVisible && renderer.isPaused else {
             fputs("FAIL: overlay must stay hidden before capture startup is approved\n", stderr)

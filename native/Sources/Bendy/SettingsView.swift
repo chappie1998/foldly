@@ -385,7 +385,7 @@ private struct BendyMacBookPreview: View {
                         }
                     }
                     .frame(height: geometry.size.height, alignment: .bottom)
-                    .blur(radius: style == .frost ? closure * (0.8 + blur * 3.5) : closure * blur * 0.35)
+                    .modifier(FoldPreviewBlur(radius: style == .frost ? closure * (0.8 + blur * 3.5) : closure * blur * 0.35, closure: closure))
                     .brightness(-closure * (style == .shade ? 0.24 : 0.06))
                     .rotation3DEffect(.degrees(-closure * 12.075 * max(0.25, perspective)), axis: (x: 1, y: 0, z: 0), anchor: .bottom, perspective: 0.5)
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .bottom)
@@ -446,6 +446,24 @@ private struct BendyMacBookPreview: View {
             Color(red: 0.31, green: 0.61, blue: 0.84)
         ]
         return colors[item % colors.count]
+    }
+}
+
+private struct FoldPreviewBlur: ViewModifier {
+    let radius: Double
+    let closure: Double
+
+    func body(content: Content) -> some View {
+        let profile = FoldBlurProfile(closure: closure)
+        let mask = LinearGradient(stops: [
+            .init(color: .white, location: 0),
+            .init(color: .white, location: max(0, 1 - profile.fullFrom)),
+            .init(color: .clear, location: min(1, 1 - profile.clearUntil)),
+            .init(color: .clear, location: 1)
+        ], startPoint: .top, endPoint: .bottom)
+        content.overlay {
+            content.blur(radius: radius, opaque: true).mask(mask)
+        }
     }
 }
 

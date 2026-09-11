@@ -21,7 +21,38 @@ struct BendGeometry {
     }
 }
 
+struct FoldBlurProfile {
+    // Coordinates run from the hinge (0) to the top of the display (1).
+    // The clear region retreats toward the hinge as the lid closes.
+    let clearUntil: Double
+    let fullFrom: Double
+
+    init(closure: Double) {
+        let progress = min(1, max(0, closure))
+        clearUntil = 0.82 - 0.94 * progress
+        fullFrom = min(1, clearUntil + 0.22 + 0.24 * progress)
+    }
+
+    func mask(in extent: CGRect) -> CIImage {
+        CIFilter(name: "CISmoothLinearGradient", parameters: [
+            "inputPoint0": CIVector(x: extent.midX, y: extent.minY + extent.height * clearUntil),
+            "inputPoint1": CIVector(x: extent.midX, y: extent.minY + extent.height * fullFrom),
+            "inputColor0": CIColor.black,
+            "inputColor1": CIColor.white
+        ])!.outputImage!.cropped(to: extent)
+    }
+}
+
 enum BendRenderer {
+    static func blur(_ source: CIImage, radius: Double, closure: Double) -> CIImage {
+        guard radius > 0.01, closure > 0 else { return source }
+        let extent = source.extent
+        let mask = FoldBlurProfile(closure: closure).mask(in: extent)
+        return source.clampedToExtent().applyingFilter("CIMaskedVariableBlur", parameters: [
+            "inputMask": mask, kCIInputRadiusKey: radius
+        ]).cropped(to: extent)
+    }
+
     static func image(_ source: CIImage, parameters: BendParameters) -> CIImage {
         let extent = source.extent.integral
         guard extent.width > 0, extent.height > 0 else { return source }
@@ -29,9 +60,8 @@ enum BendRenderer {
         let closure = Double(1 - geometry.openness)
         guard closure > 0.0001 else { return source }
         let style: (Double, Double, Double) = parameters.style == .frost ? (3.0, 0.84, 0.96) : parameters.style == .shade ? (0, 0.78, 0.84) : (0.25, 1.05, 1.04)
-        var prepared = source
         let radius = max(0, (parameters.blur * (parameters.style == .frost ? 17 : 8) + style.0) * closure * extent.height / 600)
-        if radius > 0.01 { prepared = prepared.clampedToExtent().applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: radius]).cropped(to: extent) }
+        var prepared = blur(source, radius: radius, closure: closure)
         prepared = prepared.applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 1 + (style.1 - 1) * closure, kCIInputContrastKey: 1 + (style.2 - 1) * closure])
         let frost = parameters.style == .frost
         let wash = frost ? closure * 0.14 : 0
