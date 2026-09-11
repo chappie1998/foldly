@@ -15,7 +15,7 @@ final class MetalOverlayView: MTKView, MTKViewDelegate, @unchecked Sendable {
     private var latest: CVPixelBuffer?
     private var parameters = BendParameters(angle: 105, perspective: 0.7, blur: 0.2, shadow: 0.5, style: .silk)
     private var firstPresentation: (() -> Void)?
-    private var motion = FoldMotion(angle: 107)
+    private var motion = FoldMotion(angle: 105)
     private var previousDrawTime: TimeInterval?
     private var opened: (() -> Void)?
     private let inFlight = DispatchSemaphore(value: 2)
@@ -179,17 +179,16 @@ final class OverlayController {
         else { renderer.update(parameters) }
     }
 
-    func finishOpening(completion: @escaping () -> Void = {}) {
+    func finishOpening() {
         wantsVisible = false
         presentationGeneration &+= 1
         let generation = presentationGeneration
         // Capture stays running while open. Keep its last complete frame because
         // a static desktop may send only idle samples until content changes.
-        guard window.isVisible, !presentationPending else { hide(); completion(); return }
+        guard window.isVisible, !presentationPending else { hide(); return }
         renderer.finishOpening { [weak self] in
             guard let self, self.presentationGeneration == generation, !self.wantsVisible else { return }
             self.hide()
-            completion()
         }
     }
 

@@ -3,7 +3,7 @@ import Foundation
 
 enum BendyStyle: String, CaseIterable, Identifiable { case silk = "Silk", shade = "Shade", frost = "Frost"; var id: String { rawValue } }
 
-struct BendParameters { var angle: Double; var clearAngle: Double = 107; var perspective: Double; var blur: Double; var shadow: Double; var style: BendyStyle }
+struct BendParameters { var angle: Double; var clearAngle: Double = 105; var perspective: Double; var blur: Double; var shadow: Double; var style: BendyStyle }
 
 struct BendGeometry {
     let openness: CGFloat; let bottomInset: CGFloat; let outputHeight: CGFloat
@@ -56,22 +56,22 @@ enum BendySelfTest {
         let bounds = CGRect(x: 0, y: 0, width: 640, height: 400), source = CIImage(color: .white).cropped(to: CGRect(x: 0, y: 0, width: 640, height: 400))
         let context = CIContext()
         let testParameters = { (angle: Double) in BendParameters(angle: angle, perspective: 0.75, blur: 0.4, shadow: 0.6, style: .silk) }
-        let open = BendGeometry.calculate(size: bounds.size, parameters: testParameters(107))
+        let open = BendGeometry.calculate(size: bounds.size, parameters: testParameters(105))
         guard open.openness == 1, open.bottomInset == 0, open.outputHeight == bounds.height,
-              BendRenderer.image(source, parameters: testParameters(107)).extent == source.extent else {
+              BendRenderer.image(source, parameters: testParameters(105)).extent == source.extent else {
             fputs("Geometry self-test failed: open state is not identity\n", stderr); return false
         }
-        for angle in [15.0, 60.0, 107.0] {
+        for angle in [15.0, 60.0, 105.0] {
             let geometry = BendGeometry.calculate(size: bounds.size, parameters: testParameters(angle))
             let topWidth = bounds.width, bottomWidth = bounds.width - 2 * geometry.bottomInset
             guard geometry.openness.isFinite, geometry.bottomInset.isFinite, geometry.outputHeight.isFinite,
                   geometry.bottomInset >= 0, bottomWidth > 0, bottomWidth <= topWidth,
                   geometry.outputHeight > 0, geometry.outputHeight <= bounds.height,
-                  angle == 107 || topWidth > bottomWidth else {
+                  angle == 105 || topWidth > bottomWidth else {
                 fputs("Geometry self-test failed at \(Int(angle))°\n", stderr); return false
             }
         }
-        for style in BendyStyle.allCases { for angle in [15.0, 60.0, 107.0] {
+        for style in BendyStyle.allCases { for angle in [15.0, 60.0, 105.0] {
             let p = BendParameters(angle: angle, perspective: 0.75, blur: 0.4, shadow: 0.6, style: style), output = BendRenderer.image(source, parameters: p)
             guard output.extent.width.isFinite, output.extent.height.isFinite, context.createCGImage(output, from: output.extent.integral) != nil else {
                 fputs("Render self-test failed: \(style.rawValue) at \(Int(angle))°, extent \(output.extent)\n", stderr)
@@ -82,22 +82,12 @@ enum BendySelfTest {
     }
 }
 
-enum CaptureMode: String, CaseIterable, Identifiable {
-    case byLidAngle, alwaysOn
-    var id: String { rawValue }
-    var title: String { self == .byLidAngle ? "Lid angle" : "Always on" }
-}
-
+// Keep a single capture session across lid movement while Foldly is enabled.
 struct CaptureGate {
-    static let triggerRange = 60.0...115.0
-    static func normalizedTrigger(_ angle: Double) -> Double {
-        angle.isFinite ? min(triggerRange.upperBound, max(triggerRange.lowerBound, angle.rounded())) : 105
-    }
     private(set) var isActive = false
     enum Action { case start, stop, none }
-    mutating func update(angle: Double, allowed: Bool, mode: CaptureMode = .byLidAngle, triggerAngle: Double = 105) -> Action {
-        let threshold = Self.normalizedTrigger(triggerAngle) + (isActive ? 2 : 0)
-        let wanted = allowed && angle.isFinite && (mode == .alwaysOn || angle < threshold)
+    mutating func update(angle: Double, allowed: Bool) -> Action {
+        let wanted = allowed && angle.isFinite
         guard wanted != isActive else { return .none }
         isActive = wanted
         return wanted ? .start : .stop

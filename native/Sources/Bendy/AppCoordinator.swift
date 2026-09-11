@@ -18,7 +18,6 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     private var displayConfigured = false
     private var captureGate = CaptureGate()
     private var foldVisible = false
-    private var finishingOpening = false
     private var sleeping = false
     private var awaitingFreshSensor = false
     private var sensorGeneration: UInt = 0
@@ -143,14 +142,16 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         }
         let active = settings.enabled && !settings.paused && !sleeping &&
             (!settings.followLid || (!awaitingFreshSensor && settings.currentSensorAngle != nil))
-        if active && settings.captureState == .active && !promptMonitor.isBlocked && parameters.angle < settings.clearAngle - 7 { foldSoundArmed = true }
+        if active && parameters.angle < settings.clearAngle - 7 { foldSoundArmed = true }
+        if active && foldSoundArmed && parameters.angle >= settings.clearAngle {
+            if settings.sound && settings.captureState == .active && !promptMonitor.isBlocked { foldSound.play() }
+            foldSoundArmed = false
+        }
         if !active { foldSoundArmed = false }
-        switch captureGate.update(angle: parameters.angle, allowed: active, mode: settings.captureMode, triggerAngle: settings.captureTrigger) {
+        switch captureGate.update(angle: parameters.angle, allowed: active) {
         case .start:
             displayConfigured = false
             foldVisible = false
-            finishingOpening = false
-            foldSoundArmed = false
             overlay.setPresentationAllowed(false)
             overlay.hide(clear: true)
             settingsWindow?.level = .normal
@@ -158,78 +159,44 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             promptMonitor.start()
             capture.start()
         case .stop:
-            let finishWithLastFrame = active && settings.captureState == .active && !promptMonitor.isBlocked && (foldVisible || finishingOpening)
-            capture.stop(preserveFrame: finishWithLastFrame)
+            overlay.setPresentationAllowed(false)
+            capture.stop()
             if settings.captureState != .idle { settings.captureState = .idle }
-            if finishWithLastFrame {
-                if !finishingOpening { beginOpening() }
-            } else {
-                clearPresentation()
-                promptMonitor.stop()
-            }
+            foldVisible = false
+            overlay.hide(clear: true)
+            settingsWindow?.level = .normal
+            promptMonitor.stop()
         case .none:
-            if !active { clearPresentation(); promptMonitor.stop() }
+            if !active { overlay.hide(clear: true) }
         }
-        if captureGate.isActive || finishingOpening { updateFoldPresentation(parameters) }
+        if captureGate.isActive && displayConfigured { updateFoldPresentation(parameters) }
     }
 
     private func updateFoldPresentation(_ parameters: BendParameters) {
-        let live = captureGate.isActive && displayConfigured && settings.captureState == .active
-        let allowed = (live || finishingOpening) && settings.enabled && !settings.paused && !sleeping && !promptMonitor.isBlocked
+        let allowed = captureGate.isActive && displayConfigured && settings.captureState == .active && !promptMonitor.isBlocked
         overlay.setPresentationAllowed(allowed)
         settingsWindow?.level = allowed ? NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue + 1) : .normal
-        guard allowed else {
-            foldVisible = false
-            if finishingOpening {
-                finishingOpening = false
-                foldSoundArmed = false
-                if !captureGate.isActive { overlay.hide(clear: true); promptMonitor.stop() }
-            }
-            return
-        }
-        // After angle-triggered capture stops, only the cached frame may animate.
-        guard live else { return }
+        guard allowed else { foldVisible = false; return }
         if parameters.angle < parameters.clearAngle {
-            finishingOpening = false
             foldVisible = true
             overlay.update(parameters, active: true)
         } else if foldVisible {
             // Finish opening once, without restarting capture or repeatedly
             // replacing the renderer's completion while sensor updates arrive.
-            beginOpening()
+            foldVisible = false
+            overlay.finishOpening()
         }
-    }
-
-    private func beginOpening() {
-        foldVisible = false
-        finishingOpening = true
-        overlay.finishOpening { [weak self] in
-            guard let self else { return }
-            self.finishingOpening = false
-            if self.foldSoundArmed && self.settings.sound && self.settings.enabled && !self.settings.paused && !self.promptMonitor.isBlocked { self.foldSound.play() }
-            self.foldSoundArmed = false
-            if !self.captureGate.isActive {
-                self.clearPresentation()
-                self.promptMonitor.stop()
-            }
-        }
-    }
-
-    private func clearPresentation() {
-        foldVisible = false
-        finishingOpening = false
-        foldSoundArmed = false
-        overlay.setPresentationAllowed(false)
-        overlay.hide(clear: true)
-        settingsWindow?.level = .normal
     }
 
     private func stopImmediately() {
         _ = captureGate.update(angle: 180, allowed: false)
         displayConfigured = false
+        foldVisible = false
+        overlay.setPresentationAllowed(false)
         capture.stop()
-        clearPresentation()
+        overlay.hide(clear: true)
         if settings.captureState != .idle { settings.captureState = .idle }
+        settingsWindow?.level = .normal
         promptMonitor.stop()
     }
 
