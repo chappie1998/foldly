@@ -179,16 +179,17 @@ final class OverlayController {
         else { renderer.update(parameters) }
     }
 
-    func finishOpening() {
+    func finishOpening(completion: @escaping () -> Void = {}) {
         wantsVisible = false
         presentationGeneration &+= 1
         let generation = presentationGeneration
         // Capture stays running while open. Keep its last complete frame because
         // a static desktop may send only idle samples until content changes.
-        guard window.isVisible, !presentationPending else { hide(); return }
+        guard window.isVisible, !presentationPending else { hide(); completion(); return }
         renderer.finishOpening { [weak self] in
             guard let self, self.presentationGeneration == generation, !self.wantsVisible else { return }
             self.hide()
+            completion()
         }
     }
 

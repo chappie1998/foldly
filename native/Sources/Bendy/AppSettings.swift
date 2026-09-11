@@ -11,9 +11,11 @@ final class AppSettings: ObservableObject {
         static let followLid = "followLid"
         static let manualAngle = "manualAngle"
         static let sound = "sound"
+        static let captureMode = "captureMode"
+        static let captureTrigger = "captureTrigger"
     }
 
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
     @Published var enabled = false
     @Published var paused = false
     @Published var sensorStatus = "Checking lid sensor…"
@@ -27,7 +29,7 @@ final class AppSettings: ObservableObject {
         if !enabled { return "Foldly is off" }
         if paused { return "Paused · screen capture off" }
         switch captureState {
-        case .idle: return "Ready · screen capture off"
+        case .idle: return captureMode == .byLidAngle ? "Waiting below \(Int(captureTrigger))° · capture off" : "Ready · screen capture off"
         case .starting: return "Starting screen capture…"
         case .active:
             if systemPromptVisible { return "Effect hidden for macOS · capture on" }
@@ -42,10 +44,24 @@ final class AppSettings: ObservableObject {
     @Published var followLid: Bool { didSet { defaults.set(followLid, forKey: Key.followLid) } }
     @Published var manualAngle: Double { didSet { defaults.set(manualAngle, forKey: Key.manualAngle) } }
     @Published var sound: Bool { didSet { defaults.set(sound, forKey: Key.sound) } }
+    @Published var captureMode: CaptureMode { didSet { defaults.set(captureMode.rawValue, forKey: Key.captureMode) } }
+    @Published var captureTrigger: Double {
+        didSet {
+            let normalized = CaptureGate.normalizedTrigger(captureTrigger)
+            if captureTrigger != normalized { captureTrigger = normalized }
+            defaults.set(captureTrigger, forKey: Key.captureTrigger)
+        }
+    }
+
+    var captureStopAngle: Double { captureTrigger + 2 }
+    var captureCaption: String {
+        captureMode == .byLidAngle ? "Capture below \(Int(captureTrigger))° · off at \(Int(captureStopAngle))°" : "Screen capture while enabled"
+    }
 
     let clearAngle = 107.0
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         style = BendyStyle(rawValue: defaults.string(forKey: Key.style) ?? "") ?? .silk
         perspective = defaults.object(forKey: Key.perspective) == nil ? 0.72 : defaults.double(forKey: Key.perspective)
         blur = defaults.object(forKey: Key.blur) == nil ? 0.25 : defaults.double(forKey: Key.blur)
@@ -53,6 +69,8 @@ final class AppSettings: ObservableObject {
         followLid = defaults.object(forKey: Key.followLid) == nil ? true : defaults.bool(forKey: Key.followLid)
         manualAngle = defaults.object(forKey: Key.manualAngle) == nil ? 64 : defaults.double(forKey: Key.manualAngle)
         sound = defaults.object(forKey: Key.sound) == nil ? false : defaults.bool(forKey: Key.sound)
+        captureMode = CaptureMode(rawValue: defaults.string(forKey: Key.captureMode) ?? "") ?? .byLidAngle
+        captureTrigger = CaptureGate.normalizedTrigger(defaults.object(forKey: Key.captureTrigger) == nil ? 105 : defaults.double(forKey: Key.captureTrigger))
         perspective = Self.bounded(perspective, fallback: 0.72)
         blur = Self.bounded(blur, fallback: 0.25)
         shadow = Self.bounded(shadow, fallback: 0.58)
